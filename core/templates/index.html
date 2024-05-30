@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Collins Mokua">
+        <meta name="description" content="Group Chat App">
+        <title>Group Chat</title>
+        <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    </head>
+    <body style="background-color: black;">
+        <!-- header -->
+        <div class="home-header">
+            <h3>
+                <a href="" id="my-rooms-btn">My Rooms</a>
+            </h3>
+            <h3>
+                <a href="#username" id="home-create-or-join-room-btn">Create or Join Room</a>
+            </h3>
+        </div>
+        <!-- home messages section -->
+        <h3 class="home-messages-section"></h3>
+        <h3 class="home-messages-section">{{ user }}</h3>
+        <!-- current user's name -->
+        <!--create or enter room UI-->
+        <div class="create-enter-room-ui">
+            <form class="create-enter-room-ui-form">
+                <h3 style="text-align: center;">Group Chat</h3>
+                <!--error message section-->
+                <h3 class="error-messages-section"></h3>
+                <label for="username">Username</label><br>
+                <input type="text" id="username" name="username"><br><br>
+
+                <label for="room">Room Name</label><br>
+                <input type="text" id="room" name="room"><br><br>
+
+                <div style="text-align: center;">
+                    <button type="button" class="btn" id="create-enter-room-btn">Enter room</button>
+                </div><br>
+                <!-- logout div -->
+                <div>
+                    <h3>Want to logout, click below!</h3>
+                    <h3 style="text-align: center; font-size: 24px; color: red;">
+                        <a href="" id="home-logout-btn">logout</a>
+                    </h3>
+                </div>
+            </form>
+        </div>
+
+        <!-- onclick of my rooms, we offer these -->
+        <div class="home-user-rooms">
+            <h3 style="text-align: center;">My Rooms</h3>
+            <h3 class="cancel-create-join-room-div">X</h3>
+            <div class="home-created-joined-rooms-div">
+                <h3>
+                    <a href="" id="created-rooms-btn">Created Rooms</a>
+                </h3>
+                <h3>
+                    <a href="" id="joined-rooms-btn">Joined Rooms</a>
+                </h3>
+            </div>
+            <!-- display the room list with name, onclick we go to that room -->
+            <div class="users-actual-rooms">
+                <!--current selection either joined or created-->
+                <h3 class="current-room-selection-choice">Created Rooms</h3>
+                <!-- example -->
+                <ol class="created-rooms-list">
+                    <!-- add the rooms here , example provided below -->
+                    <!-- <li><a href="">room1</a></li> -->
+                </ol>
+            </div>
+        </div>
+
+        <!--scripts-->
+        <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
+        <script>
+            // create or enter an existing room
+            (function(){
+                let createEnterRoomBtn = document.querySelector('#create-enter-room-btn');
+                let usernameInput = document.querySelector('#username');
+                let roomInput = document.querySelector('#room');
+                let errorMessageSection = document.querySelector('.error-messages-section');
+
+                createEnterRoomBtn.addEventListener('click', ()=>{
+                    if (usernameInput.value.trim().length === 0 || roomInput.value.trim().length === 0){
+                        displaErrorMessages(errorMessageSection, 'Inputs cannot be blank!');        
+                    } else {
+                        // make an ajax request to enter or create the room
+                        const xhr = new XMLHttpRequest();
+                        xhr.onreadystatechange = function(){
+                            if (this.readyState == 4 && this.status == 200){
+                                let response = JSON.parse(this.responseText).response;
+
+                                if (response === 'User does not exist!'){
+                                    displaErrorMessages(errorMessageSection, response);
+                                } else if (response === 'room created or got successfully'){
+                                    // redirect to room
+                                    window.location.href = `/core/room/${usernameInput.value}/${roomInput.value}/`;
+                                } else if (response === 'Oops, not your username!'){
+                                    displaErrorMessages(errorMessageSection, response);
+                                    $('#username').focus();
+                                }
+                            }
+                        }
+                        xhr.open('GET', `/core/create_or_get_room/${usernameInput.value}/${roomInput.value}/`, true);
+                        xhr.send();
+                    }
+                });
+            })();
+
+
+            // display error messages
+            function displaErrorMessages(errorMessageSection, message){
+                errorMessageSection.style.display = 'block';
+                errorMessageSection.innerHTML = message;
+                setTimeout(()=>{
+                    errorMessageSection.style.display = 'none';
+                }, 4000); 
+            }
+
+
+            // onclick of cancel btn of options, hide more options for myrooms
+            (function(){
+                let cancelMyroomsOptionsBtn = document.querySelector('.cancel-create-join-room-div');
+                let myRoomsDiv = document.querySelector('.home-user-rooms');
+                let currentRoomSelection = document.querySelector('.current-room-selection-choice');
+                let myRoomsBtn = document.querySelector('#my-rooms-btn');
+
+                cancelMyroomsOptionsBtn.addEventListener('click', ()=>{
+                    myRoomsDiv.style.bottom = '-100%';
+                    currentRoomSelection.style.display =  'none';
+                });
+
+                // onclick outside the rooms div hide the rooms div section
+                document.addEventListener('click', (event)=>{
+                    if (!myRoomsDiv.contains(event.target) && !myRoomsBtn.contains(event.target) &&
+                     !currentRoomSelection.contains(event.target)){
+                        myRoomsDiv.style.bottom = '-100%';
+                        currentRoomSelection.style.display =  'none';
+                    }
+                });
+            })();
+
+
+            // display more options after click on my rooms btn
+            (function(){
+                let myRoomsBtn = $('#my-rooms-btn');
+                let currentRoomSelection = $('.current-room-selection-choice');
+                let myRoomsDiv = $('.home-user-rooms');
+
+                myRoomsBtn.click((event)=>{
+                    event.preventDefault();
+                    myRoomsDiv.css('bottom', '0');
+                    setTimeout(()=>{
+                        currentRoomSelection.css('display', 'block');
+                    }, 1000);
+                });
+            })();
+
+            
+            // display home message if any
+            (function(){
+                let homeMessagesSection = $('.home-messages-section');
+
+                $(document).on('DOMContentLoaded', ()=>{
+                    // initially
+                    homeMessagesSection.css('display', 'none');
+                    if ('{{ msg }}' != "None" && '{{ msg }}' == 'Logged in Successfully'){
+                        homeMessagesSection.css('display', 'block');
+                        homeMessagesSection.html('{{msg}}');
+
+                        setTimeout(()=>{
+                            homeMessagesSection.css('display', 'none');
+                            // display the welcome user's name
+                            homeMessagesSection.css('display', 'block');
+                            homeMessagesSection.html('Welcome {{ user }}');
+                            homeMessagesSection.css('color', 'blue');
+                        }, 5000);
+                    } else {
+                            // display the welcome user's name
+                            homeMessagesSection.css('display', 'block');
+                            homeMessagesSection.html('Welcome {{ user }}');
+                            homeMessagesSection.css('color', 'blue');
+                    }
+                });
+            })();
+
+
+            // get user's created rooms if any
+            (function(){
+                let CreatedRoomsBtn = $('#created-rooms-btn');
+                let usersActualRoomsDiv = $('.users-actual-rooms');
+                let createdRoomsList = $('.created-rooms-list');
+                let currentRoomSelectionChoice = $('.current-room-selection-choice');
+
+                CreatedRoomsBtn.click((event)=>{
+                    event.preventDefault();
+                    currentRoomSelectionChoice.html('Created Rooms');
+
+                    // make an ajax request to get user's created_rooms
+                    $.ajax({
+                        type: 'GET',
+                        url: '{% url "get_user_created_rooms" %}',
+                        success: function(data){
+                            createdRoomsList.empty();
+                            if (data.response.length > 0){
+                                // we have rooms
+                                data.response.forEach((room)=>{
+                                    createdRoomsList.append(`<li><a href="/core/room/{{user}}/${room.fields.room_name}/">
+                                        ${room.fields.room_name}</a></li>`
+                                    );
+                                });
+                            } else {
+                                let newItem = `<li class="no-created-rooms">
+                                        <a href="#username" id="no-created-rooms-btn">
+                                            Currently no rooms are created by you!, create/join now
+                                        </a>
+                                </li>`;
+                                createdRoomsList.append(newItem);
+                                // onclick of no rooms created/joined by you we hide the room options
+                                let noRoomCreatedJoinedBtn = document.querySelector('#no-created-rooms-btn');
+                                let myRoomsDiv = document.querySelector('.home-user-rooms');
+                                let myRoomsBtn = document.querySelector('#my-rooms-btn');
+                                let currentRoomSelection = $('.current-room-selection-choice');
+
+
+                                noRoomCreatedJoinedBtn.addEventListener('click', (event)=>{
+                                    event.preventDefault();
+                                    myRoomsDiv.style.bottom = '-100%';
+                                    currentRoomSelection.css('display', 'none');
+                                    $('#username').focus();
+                                });
+                            }
+                        },
+                    });
+                })
+            })();
+
+
+
+            // get user's joined rooms if any
+            (function(){
+                let joinedRoomsBtn = $('#joined-rooms-btn');
+                let usersActualRoomsDiv = $('.users-actual-rooms');
+                let createdRoomsList = $('.created-rooms-list');
+                let currentRoomSelectionChoice = $('.current-room-selection-choice');
+
+
+                joinedRoomsBtn.click((event)=>{
+                    event.preventDefault();
+                    currentRoomSelectionChoice.html('Joined Rooms');
+
+                    // make an ajax request to get user's joined rooms
+                    $.ajax({
+                        type: 'GET',
+                        url: '{% url "get_user_joined_rooms" %}',
+                        success: function(data){
+                            // console.log(data);
+                            createdRoomsList.empty();
+                            if (data.response.length > 0){
+                                // we have rooms we joined
+                                data.response.forEach((room)=>{
+                                    createdRoomsList.append(`<li><a href="/core/room/{{user}}/${room.fields.room_name}/">
+                                        ${room.fields.room_name}</a></li>`
+                                    );
+                                });
+                            } else {
+                                let newItem = `<li class="no-created-rooms">
+                                        <a href="#username" id="no-created-rooms-btn">
+                                            Currently no rooms are joined by you!, create/join now
+                                        </a>
+                                </li>`;
+                                createdRoomsList.append(newItem);
+                                // onclick of no rooms created/joined by you we hide the room options
+                                let noRoomCreatedJoinedBtn = document.querySelector('#no-created-rooms-btn');
+                                let myRoomsDiv = document.querySelector('.home-user-rooms');
+                                let myRoomsBtn = document.querySelector('#my-rooms-btn');
+                                let currentRoomSelection = $('.current-room-selection-choice');
+
+
+                                noRoomCreatedJoinedBtn.addEventListener('click', (event)=>{
+                                    event.preventDefault();
+                                    myRoomsDiv.style.bottom = '-100%';
+                                    currentRoomSelection.css('display', 'none');
+                                    $('#username').focus();
+                                });
+                            }
+                        },
+                    });
+                })
+            })();
+
+            
+            // logout users
+            (function(){
+                let logoutBtn = $('#home-logout-btn');
+
+                logoutBtn.click((event)=>{
+                    event.preventDefault();
+                    $.ajax({
+                        type: 'GET',
+                        url: '{% url "logout" %}',
+                        success: function(data){
+                            if (data.response == 'Logged out successfully'){
+                                window.location.href = '{% url "signin" %}?msg=Logged%20out%20sucessfully';
+                            }
+                        },
+                    })
+                });
+            })();
+        </script>
+    </body>
+</html>

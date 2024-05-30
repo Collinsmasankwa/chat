@@ -1,0 +1,440 @@
+* {
+    box-sizing: border-box;
+}
+
+.create-enter-room-ui {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    height: 400px;
+    background-color: white;
+    box-shadow: 0 2px 3px 2px black;
+    border-radius: 10px;
+}
+
+@media (max-width: 600px) {
+    .create-enter-room-ui {
+        width: 300px;
+    }
+}
+
+.create-enter-room-ui-form {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.create-enter-room-ui-form label {
+    font-weight: bold;
+}
+
+.create-enter-room-ui-form input[type*='text']{
+    font-size: 18px;
+    border-radius: 10px;
+    outline: none;
+    border: 2px solid black;
+}
+
+.btn {
+    outline: none;
+    font-size: 18px;
+    border-radius: 10px;
+    padding: 5px;
+    cursor: pointer;
+    background-color: blue;
+    color: white;
+    border-color: blue;
+}
+
+.btn:active {
+    transform: translateY(4px);
+}
+
+.error-messages-section {
+    text-align: center;
+    color: red;
+    display: none;
+}
+
+.room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+}
+
+.chat-area {
+    height: 450px;
+    background-color: whitesmoke;
+    border-radius: 10px;
+    overflow: auto;
+    padding: 5px;
+    box-shadow: 0 2px 3px 3px black;
+}
+
+.room-sender-main-div {
+    display: flex;
+    justify-content: flex-end; 
+    /* text-align: right;  */
+    flex-wrap: nowrap;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.room-receiver-main-div {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    margin: 6px 0;
+}
+
+.room-sender-child-div, .room-receiver-child-div {
+    width: 70%;
+    border-radius: 10px;
+    background-color: rgb(33, 33, 232);
+    color: white;
+    font-size: 18px;
+    padding: 0 3px;
+    position: relative;
+}
+
+
+.room-receiver-child-div {
+    background-color: rgb(164, 155, 155);
+    color: black;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+
+@media (max-height: 450px){
+    .chat-area {
+        height: 170px;
+    }
+}
+
+.msg-input-send-btn-div {
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 7px;
+    background-color: black;
+    border-radius: 20px;
+    height: 50px;
+    margin: 0 -7px;
+}
+
+.msg-input-send-btn-div textarea {
+    resize: none;
+    border-radius: 10px;
+    font-size: 18px;
+    width: 78%;
+    border: 2px solid black;
+}
+
+/* control chat area messages display */
+.room-sender-main-div, .room-receiver-main-div {
+    display: flex;  
+}
+
+
+#room-online-count {
+    cursor: pointer;
+}
+
+.room-online-count-main-div {
+    position: fixed;
+    top: 65px;
+    right: 10px;
+    background-color: lightblue;
+    z-index: 3;
+    width: 200px;
+    height: 200px;
+    border-radius: 10px;
+    padding: 0 10px;
+    display: none; /* option is block */
+}
+
+.room-online-count-main-div::after {
+    content: '';
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, lightblue, lightblue 50%, transparent 50%, transparent);
+    transform: rotate(45deg);
+    top: -5px;
+    left: 40%;
+    padding: 3px;
+}
+
+.online-user-img {
+    width: 32px; 
+    height: 32px; 
+    border-radius: 50%; 
+    outline: 2px solid black;
+}
+
+.room-online-count-child-div {
+    display: flex;
+    align-items: center;
+}
+
+.online-marker {
+    position: absolute;
+    top: 15px;
+    left: 25px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: rgb(8, 214, 8);
+}
+
+.typing-users-info {
+    position: fixed;
+    top: 45px;
+    left: 25%;
+    width: 50%;
+    background-color: green;
+    z-index: 2;
+    padding: 4px;
+    border-radius: 10px;
+    color: white;
+    display: none; /* option block */
+}
+
+.room-name-header {
+    background-color: orange;
+    color: white;
+    padding: 5px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.room-participants {
+    position: fixed;
+    top: 77px;
+    right: 10%;
+    background-color: black;
+    z-index: 3;
+    width: 215px;
+    height: 250px;
+    border-radius: 10px;
+    padding: 0 10px;
+    color: white;
+    flex-direction: column;
+    justify-content: flex-start;
+    display: none; /*option is flex  */ 
+}
+
+.room-participants::after {
+    content: '';
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, black, black 50%, transparent 50%, transparent);
+    transform: rotate(45deg);
+    top: -5px;
+    left: 15%;
+    padding: 3px;
+}
+
+@media (min-width: 768px) {
+    .room-participants::after{
+        left: 40%;
+    }
+}
+
+.actual-participants-div {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.actual-participants-div img {
+    width: 32px;
+    height: 32px;
+    outline: 2px solid white;
+    border-radius: 50%;
+    margin-left: 2px;
+}
+
+.participants-online-marker-true {
+    position: absolute;
+    top: 15px;
+    left: 25px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: rgb(8, 214, 8);   
+    display: block; /* options display block*/
+}
+
+.home-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.home-header a {
+    color: white;
+}
+
+.home-user-rooms {
+    width: 100%;
+    position: fixed;
+    margin-left: -9px;
+    bottom: -100%; /* set to 0 in js section in index */
+    height: 300px;
+    background-color: lightblue;
+    color: black;
+    border-top-right-radius: 10px;
+    border-top-left-radius: 10px;
+    transition: 1s .1s linear;
+}
+
+.home-created-joined-rooms-div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 10px;
+}
+
+.home-created-joined-rooms-div a {
+    color: black;
+}
+
+.users-actual-rooms {
+    background-color: white;
+    height: 180px;
+    overflow: auto;
+    position: relative;
+}
+
+.users-actual-rooms ol li::marker {
+    font-size: 20px;
+}
+
+.users-actual-rooms ol li {
+    margin: 10px;
+}
+
+.users-actual-rooms ol li a {
+    font-size: 20px;
+    color:green;
+}
+
+.current-room-selection-choice {
+    position: fixed;
+    bottom: 23%;
+    left: 42%;
+    background-color: rgb(244, 84, 244);
+    padding: 4px;
+    color: white;
+    border-radius: 10px;
+    display: none; /* option block */
+}
+
+@media (max-width: 600px) {
+    .current-room-selection-choice {
+        left: 38%;
+    }
+}
+
+.cancel-create-join-room-div {
+    font-size: 30px;
+    position: absolute;
+    right: 0;
+    top: -20px;
+    cursor: pointer;
+    margin-right: 20px;
+}
+
+.signup-main-div, .signin-main-div {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.signup-fields-div, .signin-fields-div {
+    padding: 10px;
+    background-color: rgb(219, 204, 204);
+    border-radius: 10px;
+}
+
+.signup-error-message-area, .signin-error-message-area {
+    text-align: center;
+    padding: 5px;
+    background-color: tomato;
+    color: white;
+    border-radius: 10px;
+    display: none; /* option block */
+}
+
+.signup-fields-div label, .signin-fields-div label {
+    font-weight: bold;
+}
+
+.signup-fields-div input[type*='text'], .signup-fields-div input[type*='email'], .signup-fields-div input[type*='password'],
+.signin-fields-div input[type*='text'], .signin-fields-div input[type*='email'], .signin-fields-div input[type*='password']
+{
+    font-size: 18px;
+    outline: none;
+    border-radius: 10px;
+    border: 2px solid black;
+    cursor: pointer;
+    width: 250px;
+}
+
+@media (min-width: 600px) {
+    .signup-fields-div input[type*='text'], .signup-fields-div input[type*='email'], .signup-fields-div input[type*='password'],
+    .signin-fields-div input[type*='text'], .signin-fields-div input[type*='email'], .signin-fields-div input[type*='password']
+    {
+        width: 450px;
+    }
+}
+
+#signup-btn, #signin-btn {
+    width: 40%;
+    text-align: center;
+}
+
+.signup-header, .signin-header {
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.signup-header img, .signin-header img {
+    width: 32px;
+    height: 32px;
+}
+
+#signin-btn-from-signup, #signup-btn-from-signin {
+    color: blue;
+}
+
+.home-messages-section {
+    color: green;
+    position: absolute;
+    top: 35px;
+    display: none; /* option block */
+}
+
+.no-created-rooms {
+    position: absolute;
+    bottom: 35%;
+    list-style: none;
+}

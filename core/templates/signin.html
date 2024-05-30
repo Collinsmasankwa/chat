@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Collins Mokua">
+        <meta name="description" content="Group Chat Signin">
+        <title>Group Chat</title>
+        <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    </head>
+    <body>
+        <!-- form with signin fields -->
+        <form id="signin-form">
+            {% csrf_token %}
+            <div class="signin-main-div">
+                <div class="signin-fields-div">
+                    <!-- title for the form -->
+                    <div class="signin-header">
+                        <h3>Group Chat Signin</h3>
+                        <img src="{% static 'assets/insurance.png' %}">
+                    </div>
+                    <!-- error message field -->
+                    <h3 class="signin-error-message-area">
+                        error
+                    </h3>
+                    <!-- username field -->
+                    <div>
+                        <label for="signin-username">Username</label><br>
+                        <input type="text" name="signin-username" id="signin-username">
+                    </div><br><br>
+                    <!-- pwd1 field -->
+                    <div>
+                        <label for="signin-password">Password</label><br>
+                        <input type="password" name="signin-password" id="signin-password">
+                    </div><br><br>
+                    <div style="text-align: center;">
+                        <input type="submit" value="Login" class="btn" id="signin-btn">
+                    </div><br>
+                    <div style="text-align: center;">
+                        <h3>Don't have an account?&nbsp;&nbsp;
+                            <a href="" id="signup-btn-from-signin">Signup</a>
+                        </h3>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- scripts -->
+        <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
+        <script>
+            // handle signin of users
+            (function(){
+                let signinForm = $('#signin-form');
+                let usernameInput = $('#signin-username');
+                let passwordInput = $('#signin-password');
+                let data;
+                let errorMessageSection = $('.signin-error-message-area');
+
+                signinForm.submit((event)=>{
+                    event.preventDefault();
+
+                    if (usernameInput.val().trim().length === 0 || passwordInput.val().trim().length === 0){
+                        displayErrorMessage(errorMessageSection, 'Input(s) cannot be blank!');
+                    } else {
+                        data = {
+                            username: usernameInput.val().trim(),
+                            password: passwordInput.val().trim(),
+                            csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+                        }
+                        // we'll send ajax request to signin the user
+                        $.ajax({
+                            type: 'POST',
+                            url: '{% url "signin" %}',
+                            data: data,
+                            success: function(data){
+                                if (data.response === 'Logged in successfully'){
+                                    // redirect to homepage
+                                    window.location.href = '{% url "index" %}?msg=Logged%20in%20Successfully';
+                                } else {
+                                    displayErrorMessage(errorMessageSection, data.response);
+                                }
+                            },
+                            error: function(err){
+                                console.log('An unexpected error occurred!');
+                            }
+                        })
+                    }
+                });
+            })();
+
+
+            // function to display error messages in signup error field, errorMessageSection is got from jquery selection
+            function displayErrorMessage(errorMessageSection, message){
+                errorMessageSection.css('display', 'block');
+                errorMessageSection.html(message);
+
+                setTimeout(()=>{
+                    errorMessageSection.css('display', 'none');
+                }, 4000);
+            }
+
+
+            // get signup page from signin
+            (function(){
+                let signupBtnFromSignin = $('#signup-btn-from-signin');
+
+                signupBtnFromSignin.click((event)=>{
+                    event.preventDefault();
+
+                    $.ajax({
+                        type: 'GET',
+                        url: '{% url "signup" %}',
+                        success: function(data){
+                            $('body').html(data);
+                        }
+                    })
+                });
+            })();
+
+
+             // display logged out message if any
+             (function(){
+                let loggedOutMsg = '{{msg}}';
+                let signinMessageSection = $('.signin-error-message-area');
+
+                $(document).on('DOMContentLoaded', ()=>{
+                    if (loggedOutMsg != 'None' && loggedOutMsg == 'Logged out sucessfully'){
+                        signinMessageSection.css('display', 'block');
+                        signinMessageSection.css('backgroundColor', 'green');
+                        signinMessageSection.html(loggedOutMsg);
+
+                        setTimeout(()=>{
+                            signinMessageSection.css('display', 'none');
+                        }, 4000);
+                    }
+                });
+            })();
+        </script>
+    </body>
+</html>

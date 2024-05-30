@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Collins Mokua">
+        <meta name="description" content="Group Chat App">
+        <title>Group Chat</title>
+        <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    </head>
+    <body>
+        <!--room UI-->
+        <div class="room-main-div">
+            <!--room name and online count-->
+            <div class="room-header">
+                <h3 style="font-weight: bold;">
+                    <a href="{% url 'index' %}" style="text-decoration: none;">Home</a>
+                </h3>
+                <div style="display: flex; align-items: center;" id="room-name-plus-online-count-div">
+                    <!--room name, maximum chars 13-->
+                    <h3 class="room-name-header">{{ room.room_name|truncatechars:13 }}</h3>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <h3 id="room-online-count">Online Count: {{ room.online_count }}</h3>
+                </div>
+            </div>
+            <!-- display all room participants in this div -->
+            <div class="room-participants">
+                <h3 style="text-align: center;" id="paricipants-count"><!--members count--></h3>  
+                <div style="overflow: auto;" id="actual-participants-main-div">
+                    <!-- add participants here -->
+                </div>
+            </div>
+            <!--online count div, display list of online users-->
+            <div class="room-online-count-main-div">
+                <h3 style="text-align: center;">Online Users</h3>
+                <!--online users images and names-->
+                <div style="overflow: auto; height: 120px; width:215px; padding: 0 2px;" id="actual-online-user-details">
+                    <!-- add online users here -->
+                </div>
+            </div>
+            <!--chat area-->
+            <div class="chat-area">
+                <!--dynamically add messages here for the sender and receivers--> 
+                <!--show typing info if users are typing or not-->   
+                <h3 class="typing-users-info">new content</h3>    
+            </div>
+            <!--bottom UI, message input and send btn-->
+            <div class="msg-input-send-btn-div">
+                <textarea id="room-textarea"></textarea>&nbsp;
+                <button class="btn" id="send-msg-btn">Send</button>
+            </div>
+        </div>
+
+        <!--scripts-->
+        <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
+        <script>
+            // display online users on hover of the online count part
+            (function(){
+                let onlineUsersHeader = document.querySelector('#room-online-count');
+                let onlineUsersMainDiv = document.querySelector('.room-online-count-main-div');
+                let roomNameOnlineCountDiv = document.querySelector('#room-name-plus-online-count-div');
+                let actualOnlineUsersDiv = document.querySelector('#actual-online-user-details');
+
+                onlineUsersHeader.addEventListener('mouseover', ()=>{
+                    onlineUsersMainDiv.style.display = 'block';
+                });
+                
+                document.addEventListener('mouseover', (event)=>{
+                    if (!onlineUsersMainDiv.contains(event.target) && !roomNameOnlineCountDiv.contains(event.target) &&
+                    !actualOnlineUsersDiv.contains(event.target)){
+                        onlineUsersMainDiv.style.display = 'none';
+                    }
+                });
+            })();
+
+
+
+            // handle websocket connection to ChatConsumer
+            (function(){
+                const roomName = `{{ room.room_name }}`;
+                const userName = `{{ user_profile.user.username }}`;
+                const websocket = new WebSocket('ws://'+window.location.host+`/ws/chat/${userName}/${roomName}/`);
+
+                websocket.onopen = function(event){
+                    console.log('New connection has been established');
+                };
+
+                websocket.onclose = function(event){
+                    console.log('Websocket connection closed!');
+                }
+
+                websocket.onerror = function(event){
+                    console.log('An unepected error occured in websocket connection');
+                }
+
+                websocket.onmessage = function(event){
+                    // console.log(JSON.parse(event.data));
+                    let onlineCount = document.querySelector('#room-online-count');
+                    let onlineUsersDiv = document.querySelector('#actual-online-user-details');
+                    let allParticipantsDiv = $('#actual-participants-main-div');
+                    let participantsCount = document.querySelector('#paricipants-count');
+
+                    let data = JSON.parse(event.data);
+
+                    switch (data.type){
+                        case 'new_connection':
+                            // console.log(data);
+                            onlineCount.innerHTML = `Online Count: ${data.online_count}`;
+                            participantsCount.innerHTML = `Member(s): ${data.all_participants_count}`;
+                            onlineUsersDiv.innerHTML = "";
+                            allParticipantsDiv.empty();
+                            data.online_users_list.forEach((user)=>{
+                                const [username, profileImage] = user;
+                                // create new div element
+                                let newDiv = document.createElement('div');
+                                
+                                // if recently logged user == currently logged in user display name as You
+                                let currentUser = (username === `{{ user_profile.user.username }}`) ? "You" : username;
+
+                                // implements max chars of username == 16
+                                let fixedUsername = (currentUser.length > 16) ? `${currentUser.slice(0, 14)}...` : currentUser;
+                                newDiv.innerHTML = `
+                                    <div class="room-online-count-child-div">
+                                        <!-- we'll add the image and username dynamically -->
+                                        <img src="${profileImage}" class="online-user-img" draggable="false">&nbsp;
+                                        <h3>
+                                            ${fixedUsername}
+                                        </h3>   
+                                        <!--online-marker-->
+                                        <h3 class="online-marker"></> 
+                                    </div>
+                                `;
+
+                                newDiv.style.display = 'flex';
+                                newDiv.style.alignItems = 'center';
+                                newDiv.style.justifyContent = 'flex-start';
+                                newDiv.style.position = 'relative';
+
+
+                                onlineUsersDiv.appendChild(newDiv);
+                            });
+
+                            data.all_participants.forEach((user)=>{
+                                let [username, profileImage] = user;
+                                // if currently logged in user in list display name as You
+                                let currentUser = (username === `{{ user_profile.user.username }}`) ? "You" : username;
+
+                                // implements max chars of username == 16
+                                let fixedUsername = (currentUser.length > 16) ? `${currentUser.slice(0, 14)}...` : currentUser;
+
+                                let onlineMarkerClass;
+                                // check if the user is also online
+                                // if (data.online_users_list.includes(user))
+                                data.online_users_list.forEach((onlineUser)=>{
+                                    let [onlineUsername, onlineProfileImage] = onlineUser;
+                                    if (username === onlineUsername){
+                                        onlineMarkerClass = `true `;
+                                    }
+                                });
+
+                                // new paricipants div
+                                let newParticipantsDiv = `
+                                    <div class="actual-participants-div">
+                                        <!-- img of user -->
+                                        <img src="${profileImage}" draggable="false">&nbsp;
+                                        <!-- username max 16 chars -->
+                                        <h3>${fixedUsername}</h3>
+                                        <h3 class="participants-online-marker-${onlineMarkerClass}"></> 
+                                    </div>
+                                `;
+                                allParticipantsDiv.append(newParticipantsDiv);
+                            });
+
+                            break;
+
+                        case 'display_all_messages':
+                            let chatAreaSection = document.querySelector('.chat-area');
+                            let newDivSection = document.createElement('div');
+                            
+                            // recent logged in user
+                            if (data.recent_user === `{{user_profile.user.username}}`){
+                                if (data.sender != `{{user_profile.user.username}}`){
+                                // we are receiving the message
+                                newDivSection.innerHTML = `
+                                    <div class="room-receiver-main-div">
+                                        <img src="${data.sender_profile_image}" draggable="false"
+                                        style="width: 40px; height: 40px; border-radius: 50%">&nbsp;
+                                        <div class="room-receiver-child-div">
+                                            <div>
+                                                <p><span style="color:darkblue;">${data.sender}</span><br>
+                                                    ${data.message}<br>
+                                                    <span style="position: absolute; right: 6%;">${data.time}</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>      
+                                `;    
+                                chatAreaSection.appendChild(newDivSection);
+                                textarea.value = '';
+                                } else {
+                                    // we are sending the message or had sent before
+                                    newDivSection.innerHTML = `
+                                    <div class="room-sender-main-div">
+                                        <div class="room-sender-child-div">
+                                            <div>
+                                                <p>${data.message}<br>
+                                                    <span style="position: absolute; right: 6%;">${data.time}</span>
+                                                </p>
+                                            </div> 
+                                        </div>&nbsp;
+                                        <img src="${data.sender_profile_image}" draggable="false"
+                                        style="width: 40px; height: 40px; border-radius: 50%">
+                                    </div>       
+                                    `;
+                                    chatAreaSection.appendChild(newDivSection);
+                                }
+                                chatAreaSection.scrollTop = chatAreaSection.scrollHeight;
+                            }
+                            break;
+
+                        case 'disconnection':
+                            onlineCount.innerHTML = `Online Count: ${data.online_count}`;
+                            participantsCount.innerHTML = `Member(s): ${data.all_participants_count}`;
+                            onlineUsersDiv.innerHTML = "";
+                            allParticipantsDiv.empty();
+                            data.online_users_list.forEach((user)=>{
+                                const [username, profileImage] = user;
+                                // create new div element
+                                let newDiv = document.createElement('div');
+                                
+                                // if recently logged user == currently logged in user display name as You
+                                let currentUser = (username === `{{ user_profile.user.username }}`) ? "You" : username;
+
+                                // implements max chars of username == 16
+                                let fixedUsername = (currentUser.length > 16) ? `${currentUser.slice(0, 14)}...` : currentUser;
+                                newDiv.innerHTML = `
+                                    <img src="${profileImage}" class="online-user-img" draggable="false">&nbsp;
+                                    <h3>
+                                        ${fixedUsername}
+                                    </h3>   
+                                    <!--online-marker-->
+                                    <h3 class="online-marker"></> 
+                                `;
+
+                                newDiv.style.display = 'flex';
+                                newDiv.style.alignItems = 'center';
+                                newDiv.style.justifyContent = 'flex-start';
+                                newDiv.style.position = 'relative';
+
+
+                                onlineUsersDiv.appendChild(newDiv);
+                            });
+
+                            data.all_participants.forEach((user)=>{
+                                let [username, profileImage] = user;
+                                // if currently logged in user in list display name as You
+                                let currentUser = (username === `{{ user_profile.user.username }}`) ? "You" : username;
+
+                                // implements max chars of username == 16
+                                let fixedUsername = (currentUser.length > 16) ? `${currentUser.slice(0, 14)}...` : currentUser;
+
+                                let onlineMarkerClass;
+                                // check if the user is also online
+                                // if (data.online_users_list.includes(user))
+                                data.online_users_list.forEach((onlineUser)=>{
+                                    let [onlineUsername, onlineProfileImage] = onlineUser;
+                                    if (username === onlineUsername){
+                                        onlineMarkerClass = `true `;
+                                    }
+                                });
+
+                                // new paricipants div
+                                let newParticipantsDiv = `
+                                    <div class="actual-participants-div">
+                                        <!-- img of user -->
+                                        <img src="${profileImage}" draggable="false">&nbsp;
+                                        <!-- username max 16 chars -->
+                                        <h3>${fixedUsername}</h3>
+                                        <h3 class="participants-online-marker-${onlineMarkerClass}"></> 
+                                    </div>
+                                `;
+                                allParticipantsDiv.append(newParticipantsDiv);
+                            });
+
+                            break;  
+                        
+                        case 'broadcast_incoming_message':
+                            let chatArea = document.querySelector('.chat-area');
+                            let newDiv = document.createElement('div');
+                            let typingInfoSection = document.querySelector('.typing-users-info');
+
+                            if (data.sender != `{{user_profile.user.username}}`){
+                                // we are receiving the message
+                                newDiv.innerHTML = `
+                                    <div class="room-receiver-main-div">
+                                        <img src="${data.sender_profile_image}" draggable="false"
+                                        style="width: 40px; height: 40px; border-radius: 50%">&nbsp;
+                                        <div class="room-receiver-child-div">
+                                            <div>
+                                                <p><span style="color:darkblue;">${data.sender}</span><br>
+                                                    ${data.message}<br>
+                                                    <span style="position: absolute; right: 6%;">${data.time}</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>      
+                                `;    
+                                chatArea.appendChild(newDiv);
+                                chatArea.scrollTop = chatArea.scrollHeight;
+                                typingInfoSection.style.display = 'none';
+                            }  else {
+                                // we are sending the message
+                                // console.log(data.time);
+                                newDiv.innerHTML = `
+                                    <div class="room-sender-main-div">
+                                        <div class="room-sender-child-div">
+                                            <div>
+                                                <p>${data.message}<br>
+                                                    <span style="position: absolute; right: 6%;">${data.time}</span>
+                                                </p>
+                                            </div> 
+                                        </div>&nbsp;
+                                        <img src="{{user_profile.profile_image.url}}" draggable="false"
+                                        style="width: 40px; height: 40px; border-radius: 50%;">
+                                    </div>       
+                                `;
+                                chatArea.appendChild(newDiv);
+                                chatArea.scrollTop = chatArea.scrollHeight;
+                                typingInfoSection.style.display = 'none';
+                                textarea.value = '';
+                            }
+                            break;
+                    }
+                }
+
+
+                let sendMessageBtn = document.getElementById('send-msg-btn');
+                let textarea = document.querySelector('#room-textarea');
+                let chatArea = document.querySelector('.chat-area');
+                
+                let senderMainDiv = document.querySelector('.room-sender-main-div');
+                
+                sendMessageBtn.addEventListener('click', ()=>{
+                    if (textarea.value.trim().length > 0){
+                        websocket.send(JSON.stringify({message: textarea.value.trim(), sender: `{{ user_profile.user.username }}`}));
+                        chatArea.scrollTop = chatArea.scrollHeight;
+                    }
+                });
+            })();
+
+
+            // handle users typing connection to the websocket
+            (function(){
+                let textarea = document.querySelector('#room-textarea');
+                const roomName = `{{ room.room_name }}`;
+                const userName = `{{ user_profile.user.username }}`;
+                let isTyping;
+                const websocket = new WebSocket('ws://'+window.location.host+`/ws/textarea/${userName}/${roomName}/`);
+                let typingInfoSection = document.querySelector('.typing-users-info');
+                let sendMessageBtn = document.getElementById('send-msg-btn');
+
+                websocket.onopen = function(event){
+                    console.log('Typing websocket connection established');
+                }
+
+                websocket.onclose = function(event){
+                    console.log('Typing Websocket connection closed!');
+                }
+
+                websocket.onerror = function(event){
+                    console.log('An unepected error occured in Typing websocket connection');
+                }
+
+                websocket.onmessage = function(event){
+                    let data = JSON.parse(event.data);
+                    
+                    switch (data.type){
+                        case 'new_typing_connection':
+                            // console.log(data);
+                            // display the user typing if array len > 1 -- multiple users typing else 
+                            // if one check its not us and broadcast to others
+                            if (data.users_typing_list.length === 1){
+                                data.users_typing_list.forEach((user)=>{
+                                    if (user != '{{user_profile.user.username}}'){
+                                        typingInfoSection.style.display = 'block';
+                                        typingInfoSection.innerHTML = `${user} is typing...`;
+                                    }
+                                });
+                            } else if (data.users_typing_list.length >= 2) {
+                                data.users_typing_list.forEach((user)=>{
+                                    if (user != '{{user_profile.user.username}}'){
+                                        typingInfoSection.style.display = 'block';
+                                        typingInfoSection.innerHTML = `multiple users are typing...`;
+                                    }
+                                });
+                            } else {
+                                typingInfoSection.style.display = 'none';
+                            }
+                            break;
+
+                        case 'no_typing_connection':
+                            // console.log(data);
+                            break;    
+                    }
+                }
+
+                textarea.addEventListener('keyup', (event)=>{
+                    if (textarea.value.trim().length > 0){
+                        // this user is typing something
+                        isTyping = 'True';
+
+                        websocket.send(JSON.stringify({isTyping: isTyping}))
+                    } else {
+                        isTyping = 'False';
+                        websocket.send(JSON.stringify({isTyping: isTyping}))
+                    }
+                });
+
+                sendMessageBtn.addEventListener('click', ()=>{
+                    isTyping = 'False';
+                    websocket.send(JSON.stringify({isTyping: isTyping}))
+                });
+
+            })();
+
+
+            // display all participants on click of the room name, 
+            // on click outside the participnts div, room name, or room-name-plus-online-count-div, hide the participants div
+            (function(){
+                let allParticipantsHeaderBtn = document.querySelector('.room-name-header');
+                let roomParticipantsDiv = document.querySelector('.room-participants');
+                let roomNameOnlineCountDiv = document.querySelector('#room-name-plus-online-count-div');
+                
+                allParticipantsHeaderBtn.addEventListener('click', ()=>{
+                    roomParticipantsDiv.style.display =  'flex';
+                });
+                
+                document.addEventListener('click', (event)=>{
+                    if (!allParticipantsHeaderBtn.contains(event.target) && !roomParticipantsDiv.contains(event.target) &&
+                    !roomNameOnlineCountDiv.contains(event.target)){
+                        roomParticipantsDiv.style.display =  'none';
+                    } 
+                });
+            })(); 
+        </script>
+    </body>
+</html>

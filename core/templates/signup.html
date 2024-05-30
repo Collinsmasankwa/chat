@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Collins Mokua">
+        <meta name="description" content="Group Chat Signup">
+        <title>Group Chat</title>
+        <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    </head>
+    <body>
+        <!-- form with signup fields -->
+        <form id="signup-form">
+            {% csrf_token %}
+            <div class="signup-main-div">
+                <div class="signup-fields-div">
+                    <!-- title for the form -->
+                    <div class="signup-header">
+                        <h3>Group Chat Signup</h3>
+                        <img src="{% static 'assets/insurance.png' %}">
+                    </div>
+                    <!-- error message field -->
+                    <h3 class="signup-error-message-area">
+                        error
+                    </h3>
+                    <!-- username field -->
+                    <div>
+                        <label for="signup-username">Username</label><br>
+                        <input type="text" name="signup-username" id="signup-username">
+                    </div><br><br>
+                    <!-- email field -->
+                    <div>
+                        <label for="signup-email">Email</label><br>
+                        <input type="email" name="signup-email" id="signup-email">
+                    </div><br><br>
+                    <!-- pwd1 field -->
+                    <div>
+                        <label for="signup-password">Password</label><br>
+                        <input type="password" name="signup-password" id="signup-password">
+                    </div><br><br>
+                    <!-- pwd2 field -->
+                    <div>
+                        <label for="signup-password2">Confirm Password</label><br>
+                        <input type="password" name="signup-password2" id="signup-password2">
+                    </div><br><br>
+                    <div style="text-align: center;">
+                        <input type="submit" value="Signup" class="btn" id="signup-btn">
+                    </div><br>
+                    <div style="text-align: center;">
+                        <h3>Already have an account?&nbsp;&nbsp;
+                            <a href="" id="signin-btn-from-signup">Login</a>
+                        </h3>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- scripts -->
+        <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
+        <script>
+            // handle signup of users
+            (function(){
+                let signupForm = $('#signup-form');
+                let usernameInput = $('#signup-username');
+                let emailInput = $('#signup-email');
+                let passwordInput = $('#signup-password');
+                let passwordInput2 = $('#signup-password2');
+                let data;
+                let errorMessageSection = $('.signup-error-message-area');
+
+                signupForm.submit((event)=>{
+                    event.preventDefault();
+
+                    if (usernameInput.val().trim().length === 0 || emailInput.val().trim().length === 0 ||
+                        passwordInput.val().trim().length === 0 || passwordInput2.val().trim().length === 0){
+                        
+                        displayErrorMessage(errorMessageSection, 'Input(s) cannot be blank!');
+                    } else {
+                        data = {
+                            username: usernameInput.val().trim(),
+                            email: emailInput.val().trim(),
+                            password1: passwordInput.val().trim(),
+                            password2: passwordInput2.val().trim(),
+                            csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+                        }
+                        // we'll send an ajax request to signup the user 
+                        $.ajax({
+                            type: 'POST',
+                            url: '{% url "signup" %}',
+                            data: data,
+                            success: function(data){
+                                if (data.response === 'New Account created successfully!'){
+                                    // redirect to homepage
+                                    window.location.href = '{% url "index" %}?msg=New%20Account%20Created%20Successfully';
+                                } else {
+                                    displayErrorMessage(errorMessageSection, data.response);
+                                }
+                            },
+                            error: function(err){
+                                console.log('An unexpected error occurred!');
+                            }
+                        })
+                    }
+                });
+            })();
+
+
+            // function to display error messages in signup error field, errorMessageSection is got from jquery selection
+            function displayErrorMessage(errorMessageSection, message){
+                errorMessageSection.css('display', 'block');
+                errorMessageSection.html(message);
+
+                setTimeout(()=>{
+                    errorMessageSection.css('display', 'none');
+                }, 4000);
+            }
+
+
+            // get signin page from signup
+            (function(){
+                let signinBtnFromSignup = $('#signin-btn-from-signup');
+
+                signinBtnFromSignup.click((event)=>{
+                    event.preventDefault();
+
+                    $.ajax({
+                        type: 'GET',
+                        url: '{% url "signin" %}',
+                        success: function(data){
+                            $('body').html(data);
+                        }
+                    })
+                });
+            })();
+        </script>
+    </body>
+</html>
